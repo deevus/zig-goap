@@ -119,11 +119,6 @@ pub const Result = union(enum) {
     }
 };
 
-const QueueItem = struct {
-    priority: usize,
-    path: Path,
-};
-
 const VTable = struct {
     distance: *const fn (*const WorldState, *const WorldState) usize,
     is_goal: *const fn (*const WorldState, *const WorldState) bool,
