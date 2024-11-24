@@ -1,5 +1,6 @@
 const std = @import("std");
 const action_planner = @import("action_planner.zig");
+
 const PriorityQueue = std.PriorityQueue;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
@@ -104,23 +105,21 @@ const DoneResult = struct {
     }
 };
 
-pub fn Result(comptime Pos: type) type {
-    return union(enum) {
-        done: DoneResult,
-        neighbors: Pos,
-        no_path,
+pub const Result = union(enum) {
+    done: DoneResult,
+    neighbors: WorldState,
+    no_path,
 
-        pub fn deinit(self: Result(Pos)) void {
-            switch (self) {
-                .done => {
-                    var done_result = self.done;
-                    done_result.deinit();
-                },
-                else => {},
-            }
+    pub fn deinit(self: Result) void {
+        switch (self) {
+            .done => {
+                var done_result = self.done;
+                done_result.deinit();
+            },
+            else => {},
         }
-    };
-}
+    }
+};
 
 const QueueItem = struct {
     priority: usize,
@@ -188,19 +187,19 @@ pub const Astar = struct {
         allocator.destroy(self.seen);
     }
 
-    pub fn pathFind(self: *Self, start: *const WorldState, end: *const WorldState) !Result(WorldState) {
+    pub fn pathFind(self: *Self, start: *const WorldState, end: *const WorldState) !Result {
         self.next_q.items.len = 0;
         self.seen.items.len = 0;
         self.start = start;
         self.end = end;
         try self.seen.append(start);
         try self.next_q.add(Path(WorldState).init(start.*, self.arena.allocator()));
-        return Result(WorldState){ .neighbors = start.* };
+        return Result{ .neighbors = start.* };
     }
 
-    pub fn step(self: *Self) !Result(WorldState) {
+    pub fn step(self: *Self) !Result {
         if (self.next_q.items.len == 0) {
-            return Result(WorldState).no_path;
+            return Result.no_path;
         }
 
         var best = self.next_q.remove();
@@ -208,7 +207,7 @@ pub const Astar = struct {
         // Goal check
         if (self.vtable.is_goal(&best.current, self.end)) {
             try best.path.append(best.current);
-            return Result(WorldState){ .done = try DoneResult.init(self.arena.child_allocator, best) };
+            return Result{ .done = try DoneResult.init(self.arena.child_allocator, best) };
         }
 
         // Generate neighbors
@@ -242,9 +241,9 @@ pub const Astar = struct {
             try self.next_q.add(new_path);
         }
 
-        const next_best = self.next_q.peek() orelse return Result(WorldState).no_path;
+        const next_best = self.next_q.peek() orelse return Result.no_path;
 
-        return Result(WorldState){ .neighbors = next_best.current };
+        return Result{ .neighbors = next_best.current };
     }
 
     fn compare(end: *const WorldState, a: Path(WorldState), b: Path(WorldState)) Order {
@@ -359,7 +358,7 @@ pub fn plan_with_astar(
     ap: *const ActionPlanner,
     current_state: *const WorldState,
     goal_state: *const WorldState,
-) !Result(WorldState) {
+) !Result {
     var finder = try Astar.init(allocator, .{
         .actionPlanner = ap,
         .start = current_state,
