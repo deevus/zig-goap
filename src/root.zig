@@ -2,9 +2,9 @@ const std = @import("std");
 const testing = std.testing;
 const astar = @import("astar.zig");
 
-export fn add(a: i32, b: i32) i32 {
-    return a + b;
-}
+pub const Astar = astar.Astar;
+pub const AstarOptions = astar.AstarOptions;
+pub const Result = astar.Result;
 
 test {
     testing.refAllDecls(@This());
