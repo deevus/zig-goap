@@ -10,68 +10,66 @@ const WorldState = @import("action_planner.zig").WorldState;
 const ActionPlanner = action_planner.ActionPlanner;
 const ActionError = action_planner.ActionError;
 
-fn Path(comptime Pos: type) type {
-    return struct {
-        path: *ArrayList(Pos),
-        actions: *ArrayList([]const u8),
-        current: Pos,
-        g_cost: usize = 0,
-        allocator: Allocator,
+const Path = struct {
+    path: *ArrayList(WorldState),
+    actions: *ArrayList([]const u8),
+    current: WorldState,
+    g_cost: usize = 0,
+    allocator: Allocator,
 
-        pub fn init(current: Pos, allocator: Allocator) Path(Pos) {
-            const path = allocator.create(ArrayList(Pos)) catch unreachable;
-            path.* = ArrayList(Pos).init(allocator);
+    pub fn init(current: WorldState, allocator: Allocator) Path {
+        const path = allocator.create(ArrayList(WorldState)) catch unreachable;
+        path.* = ArrayList(WorldState).init(allocator);
 
-            const actions = allocator.create(ArrayList([]const u8)) catch unreachable;
-            actions.* = ArrayList([]const u8).init(allocator);
+        const actions = allocator.create(ArrayList([]const u8)) catch unreachable;
+        actions.* = ArrayList([]const u8).init(allocator);
 
-            return Path(Pos){
-                .path = path,
-                .actions = actions,
-                .current = current,
-                .allocator = allocator,
-            };
+        return Path{
+            .path = path,
+            .actions = actions,
+            .current = current,
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: *Path) void {
+        for (self.actions.items) |action| {
+            self.allocator.free(action);
+        }
+        self.actions.deinit();
+    }
+
+    pub fn dupe(self: *Path) !Path {
+        return self.dupeOwned(self.allocator);
+    }
+
+    pub fn dupeOwned(self: *Path, allocator: Allocator) !Path {
+        const path = allocator.create(ArrayList(WorldState)) catch unreachable;
+        path.* = try self.path.clone();
+
+        const actions = allocator.create(ArrayList([]const u8)) catch unreachable;
+        actions.* = ArrayList([]const u8).init(allocator);
+
+        for (self.actions.items) |action| {
+            try actions.append(try allocator.dupe(u8, action));
         }
 
-        pub fn deinit(self: *Path(Pos)) void {
-            for (self.actions.items) |action| {
-                self.allocator.free(action);
-            }
-            self.actions.deinit();
-        }
-
-        pub fn dupe(self: *Path(Pos)) !Path(Pos) {
-            return self.dupeOwned(self.allocator);
-        }
-
-        pub fn dupeOwned(self: *Path(Pos), allocator: Allocator) !Path(Pos) {
-            const path = allocator.create(ArrayList(Pos)) catch unreachable;
-            path.* = try self.path.clone();
-
-            const actions = allocator.create(ArrayList([]const u8)) catch unreachable;
-            actions.* = ArrayList([]const u8).init(allocator);
-
-            for (self.actions.items) |action| {
-                try actions.append(try allocator.dupe(u8, action));
-            }
-
-            return Path(Pos){
-                .path = path,
-                .actions = actions,
-                .current = self.current,
-                .g_cost = self.g_cost,
-                .allocator = allocator,
-            };
-        }
-    };
-}
+        return Path{
+            .path = path,
+            .actions = actions,
+            .current = self.current,
+            .g_cost = self.g_cost,
+            .allocator = allocator,
+        };
+    }
+};
 
 const DoneResult = struct {
     path: *ArrayList(WorldState),
     actions: *ArrayList([]const u8),
     arena: *ArenaAllocator,
 
-    pub fn init(allocator: Allocator, path: Path(WorldState)) !DoneResult {
+    pub fn init(allocator: Allocator, path: Path) !DoneResult {
         const arena = try allocator.create(ArenaAllocator);
         arena.* = ArenaAllocator.init(allocator);
 
@@ -123,7 +121,7 @@ pub const Result = union(enum) {
 
 const QueueItem = struct {
     priority: usize,
-    path: Path(WorldState),
+    path: Path,
 };
 
 const VTable = struct {
@@ -140,7 +138,7 @@ pub const AstarOptions = struct {
 
 pub const Astar = struct {
     const Self = @This();
-    const NextQueue = PriorityQueue(Path(WorldState), *const WorldState, compare);
+    const NextQueue = PriorityQueue(Path, *const WorldState, compare);
 
     next_q: *NextQueue,
     seen: *ArrayList(*const WorldState),
@@ -193,7 +191,7 @@ pub const Astar = struct {
         self.start = start;
         self.end = end;
         try self.seen.append(start);
-        try self.next_q.add(Path(WorldState).init(start.*, self.arena.allocator()));
+        try self.next_q.add(Path.init(start.*, self.arena.allocator()));
         return Result{ .neighbors = start.* };
     }
 
@@ -246,7 +244,7 @@ pub const Astar = struct {
         return Result{ .neighbors = next_best.current };
     }
 
-    fn compare(end: *const WorldState, a: Path(WorldState), b: Path(WorldState)) Order {
+    fn compare(end: *const WorldState, a: Path, b: Path) Order {
         const a_cost = a.g_cost + _distance(&a.current, end);
         const b_cost = b.g_cost + _distance(&b.current, end);
         return std.math.order(a_cost, b_cost);
