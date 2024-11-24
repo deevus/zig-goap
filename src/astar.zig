@@ -135,8 +135,8 @@ pub const Astar = struct {
     const Self = @This();
     const NextQueue = PriorityQueue(Path, *const WorldState, compare);
 
-    next_q: *NextQueue,
-    seen: *ArrayList(*const WorldState),
+    next_q: NextQueue,
+    seen: ArrayList(*const WorldState),
     start: *const WorldState,
     end: *const WorldState,
     arena: *ArenaAllocator,
@@ -155,11 +155,8 @@ pub const Astar = struct {
         const end = try arena_alloc.create(WorldState);
         end.* = try options.start.cloneWithAllocator(arena_alloc);
 
-        const next_q = allocator.create(NextQueue) catch unreachable;
-        next_q.* = NextQueue.init(arena_alloc, start);
-
-        const seen = allocator.create(ArrayList(*const WorldState)) catch unreachable;
-        seen.* = ArrayList(*const WorldState).init(arena_alloc);
+        const next_q = NextQueue.init(arena_alloc, start);
+        const seen = ArrayList(*const WorldState).init(arena_alloc);
 
         return Self{
             .next_q = next_q,
@@ -176,8 +173,6 @@ pub const Astar = struct {
         const allocator = self.arena.child_allocator;
         self.arena.deinit();
         allocator.destroy(self.arena);
-        allocator.destroy(self.next_q);
-        allocator.destroy(self.seen);
     }
 
     pub fn pathFind(self: *Self, start: *const WorldState, end: *const WorldState) !Result {
