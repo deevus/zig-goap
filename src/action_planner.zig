@@ -33,20 +33,20 @@ pub const ActionPlanner = struct {
         self.allocator.destroy(self.arena);
     }
 
-    pub fn setPrecondition(self: *ActionPlanner, comptime action_name: []const u8, comptime atom_name: []const u8, value: bool) !void {
+    pub fn setPrecondition(self: *ActionPlanner, action_name: []const u8, atom_name: []const u8, value: bool) !void {
         try set_condition(self.arena.allocator(), &self.preconditions, action_name, atom_name, value);
     }
 
-    pub fn setPostcondition(self: *ActionPlanner, comptime action_name: []const u8, comptime atom_name: []const u8, value: bool) !void {
+    pub fn setPostcondition(self: *ActionPlanner, action_name: []const u8, atom_name: []const u8, value: bool) !void {
         try set_condition(self.arena.allocator(), &self.postconditions, action_name, atom_name, value);
     }
 
-    pub fn setCost(self: *ActionPlanner, comptime action_name: []const u8, cost: u32) !void {
+    pub fn setCost(self: *ActionPlanner, action_name: []const u8, cost: u32) !void {
         try self.costs.put(action_name, cost);
     }
 };
 
-inline fn set_condition(allocator: Allocator, map: *std.StringHashMap(*WorldState), comptime action_name: []const u8, comptime atom_name: []const u8, value: bool) !void {
+inline fn set_condition(allocator: Allocator, map: *std.StringHashMap(*WorldState), action_name: []const u8, atom_name: []const u8, value: bool) !void {
     if (!map.contains(action_name)) {
         const state_map = try allocator.create(WorldState);
         state_map.* = WorldState.init(allocator);
