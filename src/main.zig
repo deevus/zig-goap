@@ -1,8 +1,3 @@
-const std = @import("std");
-const astar = @import("astar.zig");
-const ActionPlanner = @import("action_planner.zig").ActionPlanner;
-const WorldState = @import("action_planner.zig").WorldState;
-
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -81,13 +76,11 @@ fn is_goal(current: *const WorldState, goal: *const WorldState) bool {
     return true;
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
-
 test {
     std.testing.refAllDecls(@This());
 }
+
+const std = @import("std");
+const astar = @import("astar.zig");
+const ActionPlanner = @import("action_planner.zig").ActionPlanner;
+const WorldState = @import("action_planner.zig").WorldState;

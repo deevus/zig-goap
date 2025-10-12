@@ -19,10 +19,10 @@ const Path = struct {
 
     pub fn init(current: WorldState, allocator: Allocator) Path {
         const path = allocator.create(ArrayList(WorldState)) catch unreachable;
-        path.* = ArrayList(WorldState).init(allocator);
+        path.* = ArrayList(WorldState).empty;
 
         const actions = allocator.create(ArrayList([]const u8)) catch unreachable;
-        actions.* = ArrayList([]const u8).init(allocator);
+        actions.* = ArrayList([]const u8).empty;
 
         return Path{
             .path = path,
@@ -36,7 +36,7 @@ const Path = struct {
         for (self.actions.items) |action| {
             self.allocator.free(action);
         }
-        self.actions.deinit();
+        self.actions.deinit(self.allocator);
     }
 
     pub fn dupe(self: *Path) !Path {
@@ -45,13 +45,13 @@ const Path = struct {
 
     pub fn dupeOwned(self: *Path, allocator: Allocator) !Path {
         const path = allocator.create(ArrayList(WorldState)) catch unreachable;
-        path.* = try self.path.clone();
+        path.* = try self.path.clone(allocator);
 
         const actions = allocator.create(ArrayList([]const u8)) catch unreachable;
-        actions.* = ArrayList([]const u8).init(allocator);
+        actions.* = .empty;
 
         for (self.actions.items) |action| {
-            try actions.append(try allocator.dupe(u8, action));
+            try actions.append(allocator, try allocator.dupe(u8, action));
         }
 
         return Path{
@@ -76,17 +76,17 @@ const DoneResult = struct {
         const arena_allocator = arena.allocator();
 
         const clone_path = try arena_allocator.create(ArrayList(WorldState));
-        clone_path.* = ArrayList(WorldState).init(arena_allocator);
+        clone_path.* = ArrayList(WorldState).empty;
 
         for (path.path.items) |ws| {
-            try clone_path.append(try ws.cloneWithAllocator(arena_allocator));
+            try clone_path.append(arena_allocator, try ws.cloneWithAllocator(arena_allocator));
         }
 
         const actions = try arena_allocator.create(ArrayList([]const u8));
-        actions.* = ArrayList([]const u8).init(arena_allocator);
+        actions.* = ArrayList([]const u8).empty;
 
         for (path.actions.items) |action| {
-            try actions.append(try arena_allocator.dupe(u8, action));
+            try actions.append(arena_allocator, try arena_allocator.dupe(u8, action));
         }
 
         return DoneResult{
@@ -156,7 +156,7 @@ pub const Astar = struct {
         end.* = try options.start.cloneWithAllocator(arena_alloc);
 
         const next_q = NextQueue.init(arena_alloc, start);
-        const seen = ArrayList(*const WorldState).init(arena_alloc);
+        const seen: ArrayList(*const WorldState) = .empty;
 
         return Self{
             .next_q = next_q,
@@ -180,7 +180,7 @@ pub const Astar = struct {
         self.seen.items.len = 0;
         self.start = start;
         self.end = end;
-        try self.seen.append(start);
+        try self.seen.append(self.arena.allocator(), start);
         try self.next_q.add(Path.init(start.*, self.arena.allocator()));
         return Result{ .neighbors = start.* };
     }
@@ -194,7 +194,7 @@ pub const Astar = struct {
 
         // Goal check
         if (self.vtable.is_goal(&best.current, self.end)) {
-            try best.path.append(best.current);
+            try best.path.append(self.arena.allocator(), best.current);
             return Result{ .done = try DoneResult.init(self.arena.child_allocator, best) };
         }
 
@@ -217,11 +217,11 @@ pub const Astar = struct {
             const state = try self.arena.allocator().create(WorldState);
             state.* = neighbor.state;
 
-            try self.seen.append(state);
+            try self.seen.append(self.arena.allocator(), state);
 
             var new_path = try best.dupe();
-            try new_path.path.append(best.current);
-            try new_path.actions.append(neighbor.action_name);
+            try new_path.path.append(self.arena.allocator(), best.current);
+            try new_path.actions.append(self.arena.allocator(), neighbor.action_name);
 
             new_path.current = state.*;
             new_path.g_cost += neighbor.cost;

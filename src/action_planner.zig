@@ -1,8 +1,3 @@
-const std = @import("std");
-
-const Allocator = std.mem.Allocator;
-const ArenaAllocator = std.heap.ArenaAllocator;
-
 pub const WorldState = std.StringHashMap(bool);
 
 pub const ActionPlanner = struct {
@@ -116,8 +111,8 @@ pub fn get_possible_state_transitions(
     action_planner: *const ActionPlanner,
     fr: *const WorldState,
 ) ActionError!PossibleTransitions {
-    var transitions = std.ArrayList(PossibleTransition).init(allocator);
-    defer transitions.deinit();
+    var transitions: ArrayList(PossibleTransition) = .empty;
+    defer transitions.deinit(allocator);
 
     var it = action_planner.preconditions.iterator();
     while (it.next()) |entry| {
@@ -133,11 +128,11 @@ pub fn get_possible_state_transitions(
             try do_action(action_planner, &to_state, action_name);
 
             // Store the possible transition
-            try transitions.append(try PossibleTransition.init(allocator, action_name, action_cost, to_state));
+            try transitions.append(allocator, try PossibleTransition.init(allocator, action_name, action_cost, to_state));
         }
     }
 
-    return try PossibleTransitions.init(allocator, try transitions.toOwnedSlice());
+    return try PossibleTransitions.init(allocator, try transitions.toOwnedSlice(allocator));
 }
 
 fn are_preconditions_met(
@@ -228,3 +223,9 @@ test "get_possible_state_transitions returns correct transitions" {
     const enemy_visible = transition.to_state.get("enemyvisible") orelse false;
     try std.testing.expect(enemy_visible);
 }
+
+const std = @import("std");
+
+const ArrayList = std.ArrayList;
+const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
