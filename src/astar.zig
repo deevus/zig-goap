@@ -18,7 +18,7 @@ const WorldState = action_planner.WorldState;
 const ActionPlanner = action_planner.ActionPlanner;
 const ActionError = action_planner.ActionError;
 
-fn state_equals(a: *const WorldState, b: *const WorldState) bool {
+fn stateEquals(a: *const WorldState, b: *const WorldState) bool {
     var it = a.iterator();
     while (it.next()) |entry| {
         const atom_name = entry.key_ptr.*;
@@ -36,7 +36,7 @@ fn state_equals(a: *const WorldState, b: *const WorldState) bool {
     return true;
 }
 
-fn _distance(current: *const WorldState, goal: *const WorldState) usize {
+fn distance(current: *const WorldState, goal: *const WorldState) usize {
     var count: usize = 0;
     var it = goal.iterator();
     while (it.next()) |entry| {
@@ -56,7 +56,7 @@ fn _distance(current: *const WorldState, goal: *const WorldState) usize {
     return count;
 }
 
-fn _is_goal(current: *const WorldState, goal: *const WorldState) bool {
+fn isGoal(current: *const WorldState, goal: *const WorldState) bool {
     var it = goal.iterator();
     while (it.next()) |entry| {
         const atom_name = entry.key_ptr.*;
@@ -75,7 +75,7 @@ fn _is_goal(current: *const WorldState, goal: *const WorldState) bool {
     return true;
 }
 
-fn _get_neighbours(
+fn getNeighbours(
     allocator: Allocator,
     ap: *const ActionPlanner,
     current_state: *const WorldState,
@@ -102,7 +102,7 @@ fn _get_neighbours(
     return neighbors;
 }
 
-pub fn plan_with_astar(
+pub fn planWithAStar(
     allocator: Allocator,
     ap: *const ActionPlanner,
     current_state: *const WorldState,
@@ -112,9 +112,9 @@ pub fn plan_with_astar(
         .actionPlanner = ap,
         .start = current_state,
         .vtable = &.{
-            .distance = _distance,
-            .get_neighbors = _get_neighbours,
-            .is_goal = _is_goal,
+            .distance = distance,
+            .get_neighbors = getNeighbours,
+            .is_goal = isGoal,
         },
     });
     defer finder.deinit();
@@ -162,7 +162,7 @@ test "GOAP planning with A*" {
     try goal_state.put("enemyalive", false);
 
     // Initialize A* planner
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try std.testing.expect(result == .done);
@@ -227,7 +227,7 @@ test "planning 2" {
 
     try goal_state.put("enemyalive", false);
 
-    var plan_a = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var plan_a = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer plan_a.deinit();
 
     try std.testing.expect(plan_a == .done);
@@ -241,7 +241,7 @@ test "planning 2" {
 
     try goal_state.put("alive", true);
 
-    var plan_b = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var plan_b = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer plan_b.deinit();
 
     try std.testing.expect(plan_b == .done);
@@ -279,7 +279,7 @@ test "already at goal - should return empty plan" {
     defer goal_state.deinit();
     try goal_state.put("enemyvisible", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -304,7 +304,7 @@ test "single action needed" {
     defer goal_state.deinit();
     try goal_state.put("power", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -330,7 +330,7 @@ test "action with no preconditions - always available" {
     defer goal_state.deinit();
     try goal_state.put("exists", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -368,7 +368,7 @@ test "multiple preconditions must all be met (AND logic)" {
     defer goal_state.deinit();
     try goal_state.put("has_table", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -402,7 +402,7 @@ test "action changes multiple atoms" {
     defer goal_state.deinit();
     try goal_state.put("has_food", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -439,7 +439,7 @@ test "impossible goal - no path exists" {
     defer goal_state.deinit();
     try goal_state.put("game_won", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .no_path);
@@ -462,7 +462,7 @@ test "empty goal state - already satisfied" {
     defer goal_state.deinit();
     // Empty goal - nothing to achieve
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -488,7 +488,7 @@ test "goal is subset of world state - should match" {
     defer goal_state.deinit();
     try goal_state.put("x", true); // Only care about x, not y or z
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -524,7 +524,7 @@ test "cyclic actions - should still find path" {
     defer goal_state.deinit();
     try goal_state.put("door_open", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -567,7 +567,7 @@ test "long action chain" {
     defer goal_state.deinit();
     try goal_state.put("state5", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -612,7 +612,7 @@ test "choose cheaper of two paths" {
     defer goal_state.deinit();
     try goal_state.put("goal", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -642,7 +642,7 @@ test "default cost of 1 when not specified" {
     defer goal_state.deinit();
     try goal_state.put("done", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -682,7 +682,7 @@ test "optimal path with varying costs" {
     defer goal_state.deinit();
     try goal_state.put("goal", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -716,7 +716,7 @@ test "state_equals - asymmetric states should not match" {
     try goal_state.put("x", true); // Only x
 
     // Goal is satisfied (x=true), extra keys don't matter
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -741,7 +741,7 @@ test "state_equals - different values should not match" {
     defer goal_state.deinit();
     try goal_state.put("broken", false);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -784,7 +784,7 @@ test "crafting tree - gather resources then craft" {
     defer goal_state.deinit();
     try goal_state.put("has_sword", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
@@ -830,7 +830,7 @@ test "stealth vs combat - choose based on current state" {
     defer goal_state.deinit();
     try goal_state.put("past_guard", true);
 
-    var result = try plan_with_astar(allocator, &ap, &current_state, &goal_state);
+    var result = try planWithAStar(allocator, &ap, &current_state, &goal_state);
     defer result.deinit();
 
     try testing.expect(result == .done);
