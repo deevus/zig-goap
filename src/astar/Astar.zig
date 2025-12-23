@@ -1,19 +1,3 @@
-const std = @import("std");
-const action_planner = @import("../action_planner.zig");
-const WorldState = action_planner.WorldState;
-const ActionPlanner = action_planner.ActionPlanner;
-const Path = @import("Path.zig");
-const Options = @import("Options.zig");
-const VTable = @import("VTable.zig");
-const DoneResult = @import("DoneResult.zig");
-const Result = @import("result.zig").Result;
-const utils = @import("utils.zig");
-const PriorityQueue = std.PriorityQueue;
-const ArrayList = std.ArrayList;
-const Allocator = std.mem.Allocator;
-const ArenaAllocator = std.heap.ArenaAllocator;
-const Order = std.math.Order;
-
 const Self = @This();
 const NextQueue = PriorityQueue(Path, *const WorldState, compare);
 
@@ -119,3 +103,19 @@ fn compare(end: *const WorldState, a: Path, b: Path) Order {
     const b_cost = b.g_cost + utils.distance(&b.current, end);
     return std.math.order(a_cost, b_cost);
 }
+
+const std = @import("std");
+const action_planner = @import("../action_planner.zig");
+const WorldState = action_planner.WorldState;
+const ActionPlanner = action_planner.ActionPlanner;
+const Path = @import("Path.zig");
+const Options = @import("Options.zig");
+const VTable = @import("VTable.zig");
+const DoneResult = @import("DoneResult.zig");
+const Result = @import("result.zig").Result;
+const utils = @import("utils.zig");
+const PriorityQueue = std.PriorityQueue;
+const ArrayList = std.ArrayList;
+const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
+const Order = std.math.Order;
