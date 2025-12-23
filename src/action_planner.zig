@@ -114,22 +114,30 @@ pub fn get_possible_state_transitions(
     var transitions: ArrayList(PossibleTransition) = .empty;
     defer transitions.deinit(allocator);
 
-    var it = action_planner.preconditions.iterator();
+    // Iterate over all actions (via postconditions map)
+    // Actions without preconditions are always available
+    var it = action_planner.postconditions.iterator();
     while (it.next()) |entry| {
         const action_name = entry.key_ptr.*;
-        const preconditions: *WorldState = entry.value_ptr.*;
 
-        if (are_preconditions_met(preconditions, fr)) {
-            // Get the action cost
-            const action_cost = action_planner.costs.get(action_name) orelse 1;
-
-            // Apply the action to get the resulting state
-            var to_state = try fr.cloneWithAllocator(allocator);
-            try do_action(action_planner, &to_state, action_name);
-
-            // Store the possible transition
-            try transitions.append(allocator, try PossibleTransition.init(allocator, action_name, action_cost, to_state));
+        // Check if action has preconditions and if they're met
+        const maybe_preconditions = action_planner.preconditions.get(action_name);
+        if (maybe_preconditions) |preconditions| {
+            if (!are_preconditions_met(preconditions, fr)) {
+                continue; // Skip this action - preconditions not met
+            }
         }
+        // If no preconditions exist, action is always available
+
+        // Get the action cost
+        const action_cost = action_planner.costs.get(action_name) orelse 1;
+
+        // Apply the action to get the resulting state
+        var to_state = try fr.cloneWithAllocator(allocator);
+        try do_action(action_planner, &to_state, action_name);
+
+        // Store the possible transition
+        try transitions.append(allocator, try PossibleTransition.init(allocator, action_name, action_cost, to_state));
     }
 
     return try PossibleTransitions.init(allocator, try transitions.toOwnedSlice(allocator));
