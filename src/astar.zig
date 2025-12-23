@@ -55,8 +55,7 @@ fn getNeighbours(
     for (0..transitions.items.len) |i| {
         const transition = transitions.items[i];
 
-        neighbors[i] = try Neighbor.init(
-            allocator,
+        neighbors[i] = .init(
             transition.to_state,
             transition.action_name,
             transition.action_cost,
