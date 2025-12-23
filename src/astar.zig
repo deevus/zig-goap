@@ -19,7 +19,6 @@ const WorldState = action_planner.WorldState;
 const ActionPlanner = action_planner.ActionPlanner;
 const ActionError = action_planner.ActionError;
 
-
 fn isGoal(current: *const WorldState, goal: *const WorldState) bool {
     var it = goal.iterator();
     while (it.next()) |entry| {
@@ -51,6 +50,7 @@ fn getNeighbours(
     );
 
     var neighbors = try allocator.alloc(Neighbor, transitions.items.len);
+    errdefer allocator.free(neighbors);
 
     for (0..transitions.items.len) |i| {
         const transition = transitions.items[i];
