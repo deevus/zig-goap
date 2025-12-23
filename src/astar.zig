@@ -12,49 +12,13 @@ pub const AstarOptions = @import("astar/Options.zig");
 pub const Result = @import("astar/result.zig").Result;
 
 const Neighbor = @import("astar/Neighbor.zig");
+const utils = @import("astar/utils.zig");
 
 const Allocator = std.mem.Allocator;
 const WorldState = action_planner.WorldState;
 const ActionPlanner = action_planner.ActionPlanner;
 const ActionError = action_planner.ActionError;
 
-fn stateEquals(a: *const WorldState, b: *const WorldState) bool {
-    var it = a.iterator();
-    while (it.next()) |entry| {
-        const atom_name = entry.key_ptr.*;
-        const a_value = entry.value_ptr.*;
-
-        const maybe_b_value = b.get(atom_name);
-        if (maybe_b_value) |b_value| {
-            if (a_value != b_value) {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
-    return true;
-}
-
-fn distance(current: *const WorldState, goal: *const WorldState) usize {
-    var count: usize = 0;
-    var it = goal.iterator();
-    while (it.next()) |entry| {
-        const atom_name = entry.key_ptr.*;
-        const goal_value = entry.value_ptr.*;
-
-        const maybe_current_value = current.get(atom_name);
-        if (maybe_current_value) |current_value| {
-            if (current_value != goal_value) {
-                count += 1;
-            }
-        } else {
-            // Atom is absent in current state, counts as a difference
-            count += 1;
-        }
-    }
-    return count;
-}
 
 fn isGoal(current: *const WorldState, goal: *const WorldState) bool {
     var it = goal.iterator();
@@ -112,7 +76,7 @@ pub fn planWithAStar(
         .actionPlanner = ap,
         .start = current_state,
         .vtable = &.{
-            .distance = distance,
+            .distance = utils.distance,
             .get_neighbors = getNeighbours,
             .is_goal = isGoal,
         },

@@ -7,6 +7,7 @@ const Options = @import("Options.zig");
 const VTable = @import("VTable.zig");
 const DoneResult = @import("DoneResult.zig");
 const Result = @import("result.zig").Result;
+const utils = @import("utils.zig");
 const PriorityQueue = std.PriorityQueue;
 const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
@@ -74,7 +75,7 @@ pub fn step(self: *Self) !Result {
 
     // Check if we've already expanded this state
     for (self.seen.items) |seen_state| {
-        if (state_equals(&best.current, seen_state)) {
+        if (utils.stateEquals(&best.current, seen_state)) {
             const next_best = self.next_q.peek() orelse return Result.no_path;
             return Result{ .neighbors = next_best.current };
         }
@@ -114,46 +115,7 @@ pub fn step(self: *Self) !Result {
 }
 
 fn compare(end: *const WorldState, a: Path, b: Path) Order {
-    const a_cost = a.g_cost + _distance(&a.current, end);
-    const b_cost = b.g_cost + _distance(&b.current, end);
+    const a_cost = a.g_cost + utils.distance(&a.current, end);
+    const b_cost = b.g_cost + utils.distance(&b.current, end);
     return std.math.order(a_cost, b_cost);
-}
-
-// Helper function - duplicated from astar.zig (will be removed from here later)
-fn state_equals(a: *const WorldState, b: *const WorldState) bool {
-    var it = a.iterator();
-    while (it.next()) |entry| {
-        const atom_name = entry.key_ptr.*;
-        const a_value = entry.value_ptr.*;
-
-        const maybe_b_value = b.get(atom_name);
-        if (maybe_b_value) |b_value| {
-            if (a_value != b_value) {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
-    return true;
-}
-
-fn _distance(current: *const WorldState, goal: *const WorldState) usize {
-    var count: usize = 0;
-    var it = goal.iterator();
-    while (it.next()) |entry| {
-        const atom_name = entry.key_ptr.*;
-        const goal_value = entry.value_ptr.*;
-
-        const maybe_current_value = current.get(atom_name);
-        if (maybe_current_value) |current_value| {
-            if (current_value != goal_value) {
-                count += 1;
-            }
-        } else {
-            // Atom is absent in current state, counts as a difference
-            count += 1;
-        }
-    }
-    return count;
 }
