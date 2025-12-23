@@ -72,7 +72,7 @@ pub fn planWithAStar(
     goal_state: *const WorldState,
 ) !Result {
     var finder = try Astar.init(allocator, .{
-        .actionPlanner = ap,
+        .action_planner = ap,
         .start = current_state,
         .vtable = &.{
             .distance = utils.distance,

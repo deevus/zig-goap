@@ -1,7 +1,3 @@
-const action_planner = @import("../action_planner.zig");
-const WorldState = action_planner.WorldState;
-const DoneResult = @import("DoneResult.zig");
-
 pub const Result = union(enum) {
     done: DoneResult,
     neighbors: WorldState,
@@ -17,3 +13,7 @@ pub const Result = union(enum) {
         }
     }
 };
+
+const action_planner = @import("../action_planner.zig");
+const WorldState = action_planner.WorldState;
+const DoneResult = @import("DoneResult.zig");

@@ -1,9 +1,3 @@
-const std = @import("std");
-const action_planner = @import("../action_planner.zig");
-const WorldState = action_planner.WorldState;
-const ArrayList = std.ArrayList;
-const Allocator = std.mem.Allocator;
-
 const Path = @This();
 
 path: ArrayList(WorldState),
@@ -42,3 +36,9 @@ pub fn dupeOwned(self: Path, allocator: Allocator) !Path {
 
     return clone;
 }
+
+const std = @import("std");
+const action_planner = @import("../action_planner.zig");
+const WorldState = action_planner.WorldState;
+const ArrayList = std.ArrayList;
+const Allocator = std.mem.Allocator;

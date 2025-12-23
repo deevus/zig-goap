@@ -1,11 +1,3 @@
-const std = @import("std");
-const action_planner = @import("../action_planner.zig");
-const WorldState = action_planner.WorldState;
-const Path = @import("Path.zig");
-const ArrayList = std.ArrayList;
-const Allocator = std.mem.Allocator;
-const ArenaAllocator = std.heap.ArenaAllocator;
-
 const Self = @This();
 
 path: *ArrayList(WorldState),
@@ -42,3 +34,11 @@ pub fn deinit(self: *@This()) void {
     self.arena.deinit();
     allocator.destroy(self.arena);
 }
+
+const std = @import("std");
+const action_planner = @import("../action_planner.zig");
+const WorldState = action_planner.WorldState;
+const Path = @import("Path.zig");
+const ArrayList = std.ArrayList;
+const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;

@@ -30,7 +30,7 @@ pub fn init(allocator: Allocator, options: Options) !Self {
         .start = start,
         .end = end,
         .arena = arena,
-        .ap = options.actionPlanner,
+        .ap = options.action_planner,
         .vtable = options.vtable,
     };
 }

@@ -1,8 +1,3 @@
-const std = @import("std");
-const action_planner = @import("../action_planner.zig");
-const WorldState = action_planner.WorldState;
-const Allocator = std.mem.Allocator;
-
 const Self = @This();
 
 state: WorldState,
@@ -16,3 +11,8 @@ pub fn init(state: WorldState, action_name: []const u8, cost: usize) Self {
         .cost = cost,
     };
 }
+
+const std = @import("std");
+const action_planner = @import("../action_planner.zig");
+const WorldState = action_planner.WorldState;
+const Allocator = std.mem.Allocator;

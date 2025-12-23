@@ -1,6 +1,3 @@
-const action_planner = @import("../action_planner.zig");
-const WorldState = action_planner.WorldState;
-
 /// Checks if two WorldStates are exactly equal (same keys and values).
 pub fn stateEquals(a: *const WorldState, b: *const WorldState) bool {
     var it = a.iterator();
@@ -41,3 +38,6 @@ pub fn distance(current: *const WorldState, goal: *const WorldState) usize {
     }
     return count;
 }
+
+const action_planner = @import("../action_planner.zig");
+const WorldState = action_planner.WorldState;
