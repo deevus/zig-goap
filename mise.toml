@@ -1,4 +1,4 @@
 [tools]
 usage = "latest"
-zig = "0.15.1"
+zig = "0.15.2"
 zls = "0.15.0"
