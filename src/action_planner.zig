@@ -29,11 +29,11 @@ pub const ActionPlanner = struct {
     }
 
     pub fn setPrecondition(self: *ActionPlanner, action_name: []const u8, atom_name: []const u8, value: bool) !void {
-        try set_condition(self.arena.allocator(), &self.preconditions, action_name, atom_name, value);
+        try setCondition(self.arena.allocator(), &self.preconditions, action_name, atom_name, value);
     }
 
     pub fn setPostcondition(self: *ActionPlanner, action_name: []const u8, atom_name: []const u8, value: bool) !void {
-        try set_condition(self.arena.allocator(), &self.postconditions, action_name, atom_name, value);
+        try setCondition(self.arena.allocator(), &self.postconditions, action_name, atom_name, value);
     }
 
     pub fn setCost(self: *ActionPlanner, action_name: []const u8, cost: u32) !void {
@@ -41,7 +41,7 @@ pub const ActionPlanner = struct {
     }
 };
 
-inline fn set_condition(allocator: Allocator, map: *std.StringHashMap(*WorldState), action_name: []const u8, atom_name: []const u8, value: bool) !void {
+fn setCondition(allocator: Allocator, map: *std.StringHashMap(*WorldState), action_name: []const u8, atom_name: []const u8, value: bool) !void {
     if (!map.contains(action_name)) {
         const state_map = try allocator.create(WorldState);
         state_map.* = WorldState.init(allocator);
@@ -56,7 +56,7 @@ pub const ActionError = error{
     ActionNotFound,
 } || Allocator.Error;
 
-pub fn do_action(action_planner: *const ActionPlanner, world_state: *WorldState, action_name: []const u8) ActionError!void {
+pub fn doAction(action_planner: *const ActionPlanner, world_state: *WorldState, action_name: []const u8) ActionError!void {
     const action_postconditions = action_planner.postconditions.get(action_name) orelse return error.ActionNotFound;
 
     var it = action_postconditions.iterator();
@@ -106,7 +106,7 @@ pub const PossibleTransitions = struct {
     }
 };
 
-pub fn get_possible_state_transitions(
+pub fn getPossibleStateTransitions(
     allocator: Allocator,
     action_planner: *const ActionPlanner,
     fr: *const WorldState,
@@ -123,7 +123,7 @@ pub fn get_possible_state_transitions(
         // Check if action has preconditions and if they're met
         const maybe_preconditions = action_planner.preconditions.get(action_name);
         if (maybe_preconditions) |preconditions| {
-            if (!are_preconditions_met(preconditions, fr)) {
+            if (!arePreconditionsMet(preconditions, fr)) {
                 continue; // Skip this action - preconditions not met
             }
         }
@@ -134,7 +134,7 @@ pub fn get_possible_state_transitions(
 
         // Apply the action to get the resulting state
         var to_state = try fr.cloneWithAllocator(allocator);
-        try do_action(action_planner, &to_state, action_name);
+        try doAction(action_planner, &to_state, action_name);
 
         // Store the possible transition
         try transitions.append(allocator, try PossibleTransition.init(allocator, action_name, action_cost, to_state));
@@ -143,7 +143,7 @@ pub fn get_possible_state_transitions(
     return try PossibleTransitions.init(allocator, try transitions.toOwnedSlice(allocator));
 }
 
-fn are_preconditions_met(
+fn arePreconditionsMet(
     preconditions: *const WorldState,
     fr: *const WorldState,
 ) bool {
@@ -186,7 +186,7 @@ test "do_action applies action postconditions to world state" {
     try world_state.put("enemyvisible", false);
 
     // Apply the "scout" action
-    try do_action(&action_planner, &world_state, "scout");
+    try doAction(&action_planner, &world_state, "scout");
 
     // Verify that "enemyvisible" is now true
     const enemy_visible = world_state.get("enemyvisible") orelse false;
@@ -215,7 +215,7 @@ test "get_possible_state_transitions returns correct transitions" {
     try current_state.put("enemyvisible", false);
 
     // Get possible transitions
-    var transitions = try get_possible_state_transitions(
+    var transitions = try getPossibleStateTransitions(
         allocator,
         &action_planner,
         &current_state,

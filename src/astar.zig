@@ -80,7 +80,7 @@ fn getNeighbours(
     ap: *const ActionPlanner,
     current_state: *const WorldState,
 ) ActionError![]Neighbor {
-    const transitions = try action_planner.get_possible_state_transitions(
+    const transitions = try action_planner.getPossibleStateTransitions(
         allocator,
         ap,
         current_state,
