@@ -181,7 +181,6 @@ pub const Astar = struct {
         self.seen.items.len = 0;
         self.start = start;
         self.end = end;
-        try self.seen.append(self.arena.allocator(), start);
         try self.next_q.add(Path.init(start.*, self.arena.allocator()));
         return Result{ .neighbors = start.* };
     }
@@ -193,6 +192,19 @@ pub const Astar = struct {
 
         var best = self.next_q.remove();
 
+        // Check if we've already expanded this state
+        for (self.seen.items) |seen_state| {
+            if (state_equals(&best.current, seen_state)) {
+                const next_best = self.next_q.peek() orelse return Result.no_path;
+                return Result{ .neighbors = next_best.current };
+            }
+        }
+
+        // Mark this state as expanded
+        const current_state = try self.arena.allocator().create(WorldState);
+        current_state.* = best.current;
+        try self.seen.append(self.arena.allocator(), current_state);
+
         // Goal check
         if (self.vtable.is_goal(&best.current, self.end)) {
             try best.path.append(self.arena.allocator(), best.current);
@@ -203,22 +215,8 @@ pub const Astar = struct {
         const neighbors = try self.vtable.get_neighbors(self.arena.allocator(), self.ap, &best.current);
 
         for (neighbors) |neighbor| {
-            // Check if we've already seen this state
-            var found = false;
-            for (self.seen.items) |seen_state| {
-                if (state_equals(&neighbor.state, seen_state)) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                continue;
-            }
-
             const state = try self.arena.allocator().create(WorldState);
             state.* = neighbor.state;
-
-            try self.seen.append(self.arena.allocator(), state);
 
             var new_path = try best.dupe();
             try new_path.path.append(self.arena.allocator(), best.current);
