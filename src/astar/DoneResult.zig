@@ -6,11 +6,13 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
+const Self = @This();
+
 path: *ArrayList(WorldState),
-actions: *ArrayList([]const u8),
+actions: ArrayList([]const u8),
 arena: *ArenaAllocator,
 
-pub fn init(allocator: Allocator, path: Path) !@This() {
+pub fn init(allocator: Allocator, path: Path) !Self {
     const arena = try allocator.create(ArenaAllocator);
     arena.* = ArenaAllocator.init(allocator);
 
@@ -23,14 +25,12 @@ pub fn init(allocator: Allocator, path: Path) !@This() {
         try clone_path.append(arena_allocator, try ws.cloneWithAllocator(arena_allocator));
     }
 
-    const actions = try arena_allocator.create(ArrayList([]const u8));
-    actions.* = ArrayList([]const u8).empty;
-
+    var actions: ArrayList([]const u8) = .empty;
     for (path.actions.items) |action| {
         try actions.append(arena_allocator, try arena_allocator.dupe(u8, action));
     }
 
-    return @This(){
+    return Self{
         .path = clone_path,
         .actions = actions,
         .arena = arena,

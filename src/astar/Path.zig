@@ -28,11 +28,11 @@ pub fn deinit(self: *Path) void {
     self.actions.deinit(self.allocator);
 }
 
-pub fn dupe(self: *Path) !Path {
+pub fn dupe(self: Path) !Path {
     return self.dupeOwned(self.allocator);
 }
 
-pub fn dupeOwned(self: *Path, allocator: Allocator) !Path {
+pub fn dupeOwned(self: Path, allocator: Allocator) !Path {
     var clone: Path = .init(self.current, self.allocator);
     clone.path = try self.path.clone(allocator);
 
